@@ -1,8 +1,26 @@
 const { Telegraf, Markup, Scenes, session } = require('telegraf');
 const axios = require('axios');
+const fs = require('fs');
 
 const token = '6638988189:AAFYFlTSYffAN1aWgtAI2Nag5i0bfXopSog'; // Replace with your actual bot token
 const bot = new Telegraf(token);
+
+const lockFilePath = '/tmp/bot_lock'; // Change this to an appropriate location for your system
+
+// Check if another instance is already running
+if (fs.existsSync(lockFilePath)) {
+    console.error('Another instance is already running.');
+    process.exit(1);
+}
+
+// Create a lock file
+fs.writeFileSync(lockFilePath, 'locked');
+
+// Cleanup on exit or interruption (SIGINT)
+process.on('SIGINT', () => {
+    fs.unlinkSync(lockFilePath);
+    process.exit();
+});
 
 // Scene setup
 const predictionScene = new Scenes.BaseScene('predictionScene');
