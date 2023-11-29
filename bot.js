@@ -1,15 +1,8 @@
 const { Telegraf, Markup, Scenes, session } = require('telegraf');
 const axios = require('axios');
 
-const token = '6638988189:AAFYFlTSYffAN1aWgtAI2Nag5i0bfXopSog';
-const bot = new Telegraf(token, {
-    telegram: {
-        polling: {
-            interval: 1000,
-            timeout: 10,
-        },
-    }
-});
+const token = '6837509601:AAG3JZUCs1SGErylDDnbINEA6VOM_yIZ8L4'; // Replace with your actual bot token
+const bot = new Telegraf(token, { polling: true });
 
 // Scene setup
 const predictionScene = new Scenes.BaseScene('predictionScene');
@@ -287,4 +280,4 @@ bot.action('cancel', (ctx) => {
 });
 
 // Start the bot
-bot.launch().catch((err) => console.error(err));;
+bot.launch();
