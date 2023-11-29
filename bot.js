@@ -293,4 +293,9 @@ bot.action('cancel', (ctx) => {
 });
 
 // Start the bot
-bot.launch();
+bot.launch({
+    webhook: {
+        domain: 'https://dzfxgchvjbkl.onrender.com', // Replace with your actual Render domain
+        port: process.env.PORT || 3000,
+    },
+});
