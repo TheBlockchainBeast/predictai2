@@ -2,7 +2,7 @@ const { Telegraf, Markup, Scenes, session } = require('telegraf');
 const axios = require('axios');
 
 const token = '6638988189:AAFYFlTSYffAN1aWgtAI2Nag5i0bfXopSog'; // Replace with your actual bot token
-const bot = new Telegraf(token, { polling: true });
+const bot = new Telegraf(token);
 
 // Scene setup
 const predictionScene = new Scenes.BaseScene('predictionScene');
