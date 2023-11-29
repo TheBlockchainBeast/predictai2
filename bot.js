@@ -239,10 +239,7 @@ ${susCodeSection}
             ctx.reply('Error fetching token data. Please try again later.');
         }
 
-        finally {
-            // Ensure that the context leaves the scene even in case of an error
-            ctx.scene.leave();
-        }
+        ctx.scene.leave();
     }
 });
 
