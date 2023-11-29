@@ -99,11 +99,6 @@ predictionScene.on('text', async (ctx) => {
                             marketCapPredictionMessage = "Market cap prediction not available.";
                     }
 
-                    // Calculate predicted market cap (adjust as needed)
-                    const currentMarketCap = parseFloat(tokenData.fdv) || 0;
-                    const marketCapAdjustment = Math.random() * 0.4 - 0.2; // Random adjustment between -20% to 20%
-                    predictedMarketCap = currentMarketCap * (1 + marketCapAdjustment);
-
                 } else {
                     // Handle the case where dexscreener is null
                     console.error("dexscreener is null");
