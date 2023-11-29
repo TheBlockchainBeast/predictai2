@@ -1,7 +1,7 @@
 const { Telegraf, Markup, Scenes, session } = require('telegraf');
 const axios = require('axios');
 
-const token = '6837509601:AAG3JZUCs1SGErylDDnbINEA6VOM_yIZ8L4'; // Replace with your actual bot token
+const token = '6638988189:AAFYFlTSYffAN1aWgtAI2Nag5i0bfXopSog'; // Replace with your actual bot token
 const bot = new Telegraf(token, { telegram: { polling: { interval: 3000 } } });
 
 // Scene setup
