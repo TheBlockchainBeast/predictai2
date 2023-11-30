@@ -2,28 +2,29 @@ const { Telegraf, Markup, Scenes, session } = require('telegraf');
 const axios = require('axios');
 const fs = require('fs');
 
-const token = '6638988189:AAFYFlTSYffAN1aWgtAI2Nag5i0bfXopSog'; // Replace with your actual bot token
+const token = '6638988189:AAFYFlTSYffAN1aWgtAI2Nag5i0bfXopSog';
 const bot = new Telegraf(token);
 
-const lockFilePath = '/tmp/bot_lock'; // Change this to an appropriate location for your system
+// Store alerts in memory
+const alerts = {};
 
-// Check if another instance is already running
-if (fs.existsSync(lockFilePath)) {
-    console.error('Another instance is already running.');
-    process.exit(1);
-}
+// const lockFilePath = '/tmp/bot_lock';
 
-// Create a lock file
-fs.writeFileSync(lockFilePath, 'locked');
+// if (fs.existsSync(lockFilePath)) {
+//     console.error('Another instance is already running.');
+//     process.exit(1);
+// }
 
-// Cleanup on exit or interruption (SIGINT)
-process.on('SIGINT', () => {
-    fs.unlinkSync(lockFilePath);
-    process.exit();
-});
+// fs.writeFileSync(lockFilePath, 'locked');
+
+// process.on('SIGINT', () => {
+//     fs.unlinkSync(lockFilePath);
+//     process.exit();
+// });
 
 // Scene setup
 const predictionScene = new Scenes.BaseScene('predictionScene');
+const alertScene = new Scenes.BaseScene('alertScene');
 
 predictionScene.enter((ctx) => {
     ctx.reply(`Ready to unveil the future of a crypto gem? Enter the token address below 👇 to kick off the prediction process. Ensure it's a valid Ethereum Network address, and for optimal results, consider tokens with over 3 days of market presence. 🕒\n\nHit cancel if you've had a change of heart. Let's dive into the crystal ball of crypto! 🔮`,
@@ -256,6 +257,142 @@ ${susCodeSection}
     }
 });
 
+alertScene.enter((ctx) => {
+    ctx.reply(`Ready to set an alert? Enter the token address below 👇 to start the alert setup. Ensure it's a valid Ethereum Network address. 🕒
+\nTo set an alert, type the token address, add a comma, and then provide the market cap value for the alert. For example: \`tokenAddress,marketCapValue\`.
+\nHit cancel if you've had a change of heart. Let's get those alerts ready! 🔔`,
+        Markup.inlineKeyboard([[Markup.button.callback('View Alerts', 'viewAlerts')], [Markup.button.callback('Cancel', 'cancelAlert')]]))
+        .then((message) => {
+            // Store the initial message ID for later deletion
+            ctx.session.initialAlertMessageId = message.message_id;
+        });
+});
+
+// Function to retrieve token data using the appropriate API
+const getTokenData = async (tokenAddress) => {
+    try {
+        // Modify this with the appropriate API and logic for fetching token data
+        const dexscreenerApiUrl = `https://api.dexscreener.com/latest/dex/search?q=${tokenAddress}`;
+        const dexscreenerResponse = await axios.get(dexscreenerApiUrl);
+
+        if (dexscreenerResponse.data && dexscreenerResponse.data.pairs && dexscreenerResponse.data.pairs.length > 0) {
+            return dexscreenerResponse.data.pairs[0];
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error('Error fetching token data:', error);
+        return null;
+    }
+};
+
+// Alert scene setup
+alertScene.on('text', async (ctx) => {
+    const userResponse = ctx.message.text.toLowerCase(); // Convert the user response to lowercase
+
+    if (userResponse === 'cancel') {
+        ctx.telegram.deleteMessage(ctx.chat.id, ctx.session.initialAlertMessageId);
+        ctx.reply('Alert setup canceled. Feel free to explore other features!');
+    } else {
+        const [tokenAddress, alertValue] = userResponse.split(',');
+
+        if (tokenAddress && alertValue) {
+            try {
+                // Retrieve token data using the appropriate API
+                const tokenData = await getTokenData(tokenAddress.trim());
+
+                if (tokenData) {
+                    const parsedAlertValue = parseFloat(alertValue);
+
+                    if (!isNaN(parsedAlertValue)) {
+                        const initialMarketCap = parseFloat(tokenData.fdv) || 0;
+
+                        // Set up the alert for this user
+                        alerts[ctx.from.id] = alerts[ctx.from.id] || [];
+                        alerts[ctx.from.id].push({
+                            tokenAddress: tokenAddress.trim(),
+                            alertValue: parsedAlertValue,
+                            initialMarketCap: initialMarketCap,
+                        });
+
+                        console.log('Alerts after addition:', alerts);
+
+                        ctx.reply(`🔔 Alert set for ${tokenData.baseToken.name} (${tokenData.baseToken.symbol}).
+\nInitial market cap: $${initialMarketCap.toFixed(2)}
+\nYou will be notified when the market cap reaches or exceeds $${parsedAlertValue.toFixed(2)}.`);
+                    } else {
+                        ctx.reply('Invalid alert value. Please enter a valid number for the alert value.');
+                    }
+                } else {
+                    ctx.reply('Token data not found. Please make sure the token address is valid.');
+                }
+            } catch (error) {
+                console.error('Error fetching token data:', error);
+                ctx.reply('Error fetching token data. Please try again later.');
+            }
+        } else {
+            ctx.reply('Invalid input format. Please enter the token address and alert value separated by a comma (,).');
+        }
+    }
+
+    // Check for alerts when a new one is set
+    checkAlerts(ctx);
+
+    ctx.scene.leave();
+});
+
+
+// Helper function to format market cap
+function formatMarketCap(marketCap) {
+    if (marketCap >= 1e6) {
+        return `$${(marketCap / 1e6).toFixed(2)}M`;
+    } else if (marketCap >= 1e3) {
+        return `$${(marketCap / 1e3).toFixed(2)}K`;
+    } else {
+        return `$${marketCap.toFixed(2)}`;
+    }
+}
+
+// Function to check alerts and send notifications
+const checkAlerts = async (ctx) => {
+    const alertData = alerts[ctx.from.id];
+
+    console.log('Alert Data before API call:', alertData);
+
+    if (alertData && alertData.length > 0) {
+        try {
+            // Fetch current market cap using the Dexscreener API
+            const dexscreenerApiUrl = `https://api.dexscreener.com/latest/dex/search?q=${alertData[0].tokenAddress}`;
+            console.log('Dexscreener API URL:', dexscreenerApiUrl);
+            const dexscreenerResponse = await axios.get(dexscreenerApiUrl);
+
+            console.log('Dexscreener Response:', dexscreenerResponse.data);
+
+            if (dexscreenerResponse.data && dexscreenerResponse.data.pairs && dexscreenerResponse.data.pairs.length > 0) {
+                const tokenData = dexscreenerResponse.data.pairs[0];
+                console.log('Token Data:', tokenData);
+                const currentMarketCap = parseFloat(tokenData.fdv) || 0;
+
+                // Check if the current market cap has reached the alert value
+                if (currentMarketCap >= alertData[0].alertValue) {
+                    // Send alert notification
+                    ctx.reply(`🚨 The market cap for ${tokenData.baseToken.name} (${tokenData.baseToken.symbol}) has reached or exceeded the set value of ${formatMarketCap(alertData[0].alertValue)}.
+\nInitial market cap: $${alertData[0].initialMarketCap.toFixed(2)}.`);
+
+                    // Clear the alert data after sending the notification
+                    delete alerts[ctx.from.id];
+                }
+            } else {
+                ctx.reply('Token data not found. Please make sure the token address is valid.');
+            }
+        } catch (error) {
+            console.error('Error fetching token data:', error);
+            ctx.reply('Error fetching token data. Please try again later.');
+        }
+    }
+};
+
+
 // Command handler
 bot.start((ctx) => {
     const welcomeMessage = `
@@ -276,9 +413,55 @@ Remember, while I strive for top-notch results, it's crucial for you to DYOR as 
 });
 
 // Register the scenes
-const stage = new Scenes.Stage([predictionScene]);
+const stage = new Scenes.Stage([predictionScene, alertScene]);
 bot.use(session());
 bot.use(stage.middleware());
+
+// Button handler - entering the alert scene
+bot.hears('🚀 Alert', (ctx) => {
+    ctx.scene.enter('alertScene');
+});
+
+// Inline button handler for canceling alerts
+bot.action('cancelAlert', (ctx) => {
+    ctx.deleteMessage(); // Delete the initial message
+    ctx.reply('Alert setup canceled. Feel free to explore other features!');
+    ctx.scene.leave();
+});
+
+// Inline button handler for viewing alerts
+bot.action('viewAlerts', async (ctx) => {
+    // Fetch and display the list of active alerts for the user
+    const userAlerts = alerts[ctx.from.id];
+    if (userAlerts && userAlerts.length > 0) {
+        const alertList = [];
+
+        for (const alert of userAlerts) {
+            try {
+                // Fetch token data using the getTokenData function
+                const tokenData = await getTokenData(alert.tokenAddress);
+
+                if (tokenData) {
+                    // Display alert with token name
+                    alertList.push(`🔔 Alert for ${tokenData.baseToken.name} (${tokenData.baseToken.symbol}): $${alert.alertValue.toFixed(2)}`);
+                } else {
+                    alertList.push(`🔔 Alert for Unknown Token: $${alert.alertValue.toFixed(2)}`);
+                }
+            } catch (error) {
+                console.error('Error fetching token data:', error);
+                alertList.push(`🔔 Alert for Unknown Token: $${alert.alertValue.toFixed(2)}`);
+            }
+        }
+
+        ctx.reply(alertList.join('\n'));
+    } else {
+        ctx.reply('You have no active alerts.');
+    }
+    ctx.deleteMessage(); // Delete the initial message
+    ctx.scene.leave();
+});
+
+
 
 // Button handler - entering the scene
 bot.hears('🔮 Predict', (ctx) => {
@@ -295,7 +478,8 @@ bot.action('cancel', (ctx) => {
 // Start the bot
 bot.launch({
     webhook: {
-        domain: 'https://dzfxgchvjbkl.onrender.com', // Replace with your actual Render domain
+        domain: 'https://dzfxgchvjbkl.onrender.com',
         port: process.env.PORT || 3000,
     },
 });
+// bot.launch();
