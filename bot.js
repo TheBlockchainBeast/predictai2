@@ -259,7 +259,7 @@ ${susCodeSection}
 
 alertScene.enter((ctx) => {
     ctx.reply(`Ready to set an alert? Enter the token address below 👇 to start the alert setup. Ensure it's a valid Ethereum Network address. 🕒
-\nTo set an alert, type the token address, add a comma, and then provide the market cap value for the alert. For example: \`tokenAddress,marketCapValue\`.
+\nTo set an alert, type the token address, add a comma, and then provide the market cap value for the alert. For example: \`tokenAddress, marketCapValue\`.
 \nHit cancel if you've had a change of heart. Let's get those alerts ready! 🔔`,
         Markup.inlineKeyboard([[Markup.button.callback('View Alerts', 'viewAlerts')], [Markup.button.callback('Cancel', 'cancelAlert')]]))
         .then((message) => {
@@ -286,60 +286,72 @@ const getTokenData = async (tokenAddress) => {
     }
 };
 
-// Alert scene setup
-alertScene.on('text', async (ctx) => {
-    const userResponse = ctx.message.text.toLowerCase(); // Convert the user response to lowercase
+// Create a wizard for alert setup
+const alertWizard = new Scenes.WizardScene(
+    'alert-wizard',
+    (ctx) => {
+        ctx.reply(`Enter the token address below to set up an alert. Ensure it's a valid Ethereum Network address.`);
+        return ctx.wizard.next();
+    },
+    async (ctx) => {
+        const tokenAddress = ctx.message.text.trim();
 
-    if (userResponse === 'cancel') {
-        ctx.telegram.deleteMessage(ctx.chat.id, ctx.session.initialAlertMessageId);
-        ctx.reply('Alert setup canceled. Feel free to explore other features!');
-    } else {
-        const [tokenAddress, alertValue] = userResponse.split(',');
+        try {
+            // Retrieve token data using the appropriate API
+            const tokenData = await getTokenData(tokenAddress);
 
-        if (tokenAddress && alertValue) {
+            if (tokenData) {
+                ctx.reply(`Great! Now, enter the market cap value for the alert.`);
+                ctx.session.tokenAddress = tokenAddress;
+                return ctx.wizard.next();
+            } else {
+                ctx.reply('Token data not found. Please make sure the token address is valid.');
+                return ctx.scene.leave();
+            }
+        } catch (error) {
+            console.error('Error fetching token data:', error);
+            ctx.reply('Error fetching token data. Please try again later.');
+            return ctx.scene.leave();
+        }
+    },
+    async (ctx) => {
+        const alertValue = parseFloat(ctx.message.text.trim());
+
+        if (!isNaN(alertValue)) {
             try {
                 // Retrieve token data using the appropriate API
-                const tokenData = await getTokenData(tokenAddress.trim());
+                const tokenData = await getTokenData(ctx.session.tokenAddress);
+                const initialMarketCap = parseFloat(tokenData.fdv) || 0;
 
-                if (tokenData) {
-                    const parsedAlertValue = parseFloat(alertValue);
+                // Set up the alert for this user
+                alerts[ctx.from.id] = alerts[ctx.from.id] || [];
+                alerts[ctx.from.id].push({
+                    tokenAddress: ctx.session.tokenAddress,
+                    alertValue: alertValue,
+                    initialMarketCap: initialMarketCap,
+                });
 
-                    if (!isNaN(parsedAlertValue)) {
-                        const initialMarketCap = parseFloat(tokenData.fdv) || 0;
+                console.log('Alerts after addition:', alerts);
 
-                        // Set up the alert for this user
-                        alerts[ctx.from.id] = alerts[ctx.from.id] || [];
-                        alerts[ctx.from.id].push({
-                            tokenAddress: tokenAddress.trim(),
-                            alertValue: parsedAlertValue,
-                            initialMarketCap: initialMarketCap,
-                        });
-
-                        console.log('Alerts after addition:', alerts);
-
-                        ctx.reply(`🔔 Alert set for ${tokenData.baseToken.name} (${tokenData.baseToken.symbol}).
+                ctx.reply(`🔔 Alert set for ${tokenData.baseToken.name} (${tokenData.baseToken.symbol}).
 \nInitial market cap: $${initialMarketCap.toFixed(2)}
-\nYou will be notified when the market cap reaches or exceeds $${parsedAlertValue.toFixed(2)}.`);
-                    } else {
-                        ctx.reply('Invalid alert value. Please enter a valid number for the alert value.');
-                    }
-                } else {
-                    ctx.reply('Token data not found. Please make sure the token address is valid.');
-                }
+\nYou will be notified when the market cap reaches or exceeds $${alertValue.toFixed(2)}.`, Markup.inlineKeyboard([
+                    Markup.button.callback('View Alerts', 'viewAlerts'),
+                ]));
             } catch (error) {
                 console.error('Error fetching token data:', error);
                 ctx.reply('Error fetching token data. Please try again later.');
             }
         } else {
-            ctx.reply('Invalid input format. Please enter the token address and alert value separated by a comma (,).');
+            ctx.reply('Invalid alert value. Please enter a valid number for the alert value.');
         }
+
+        // Check for alerts when a new one is set
+        checkAlerts(ctx);
+
+        return ctx.scene.leave();
     }
-
-    // Check for alerts when a new one is set
-    checkAlerts(ctx);
-
-    ctx.scene.leave();
-});
+);
 
 
 // Helper function to format market cap
@@ -357,27 +369,23 @@ function formatMarketCap(marketCap) {
 const checkAlerts = async (ctx) => {
     const alertData = alerts[ctx.from.id];
 
-    console.log('Alert Data before API call:', alertData);
-
     if (alertData && alertData.length > 0) {
         try {
-            // Fetch current market cap using the Dexscreener API
             const dexscreenerApiUrl = `https://api.dexscreener.com/latest/dex/search?q=${alertData[0].tokenAddress}`;
-            console.log('Dexscreener API URL:', dexscreenerApiUrl);
             const dexscreenerResponse = await axios.get(dexscreenerApiUrl);
-
-            console.log('Dexscreener Response:', dexscreenerResponse.data);
 
             if (dexscreenerResponse.data && dexscreenerResponse.data.pairs && dexscreenerResponse.data.pairs.length > 0) {
                 const tokenData = dexscreenerResponse.data.pairs[0];
-                console.log('Token Data:', tokenData);
                 const currentMarketCap = parseFloat(tokenData.fdv) || 0;
 
-                // Check if the current market cap has reached the alert value
-                if (currentMarketCap >= alertData[0].alertValue) {
+                const alert = alertData[0];
+                const { alertValue, initialMarketCap } = alert;
+
+                // Check the direction of the alert
+                if ((initialMarketCap < alertValue && currentMarketCap >= alertValue) || (initialMarketCap > alertValue && currentMarketCap <= alertValue)) {
                     // Send alert notification
-                    ctx.reply(`🚨 The market cap for ${tokenData.baseToken.name} (${tokenData.baseToken.symbol}) has reached or exceeded the set value of ${formatMarketCap(alertData[0].alertValue)}.
-\nInitial market cap: $${alertData[0].initialMarketCap.toFixed(2)}.`);
+                    ctx.reply(`🚨 The market cap for ${tokenData.baseToken.name} (${tokenData.baseToken.symbol}) has reached or exceeded the set value of $${alertValue.toFixed(2)}.
+                    \nInitial market cap: $${initialMarketCap.toFixed(2)}.`);
 
                     // Clear the alert data after sending the notification
                     delete alerts[ctx.from.id];
@@ -391,6 +399,7 @@ const checkAlerts = async (ctx) => {
         }
     }
 };
+
 
 
 // Command handler
@@ -413,13 +422,13 @@ Remember, while I strive for top-notch results, it's crucial for you to DYOR as 
 });
 
 // Register the scenes
-const stage = new Scenes.Stage([predictionScene, alertScene]);
+const stage = new Scenes.Stage([predictionScene, alertScene, alertWizard]);
 bot.use(session());
 bot.use(stage.middleware());
 
 // Button handler - entering the alert scene
 bot.hears('🚀 Alert', (ctx) => {
-    ctx.scene.enter('alertScene');
+    ctx.scene.enter('alert-wizard');
 });
 
 // Inline button handler for canceling alerts
@@ -429,35 +438,58 @@ bot.action('cancelAlert', (ctx) => {
     ctx.scene.leave();
 });
 
-// Inline button handler for viewing alerts
+// Inline button handler for viewing and deleting alerts
 bot.action('viewAlerts', async (ctx) => {
     // Fetch and display the list of active alerts for the user
     const userAlerts = alerts[ctx.from.id];
     if (userAlerts && userAlerts.length > 0) {
         const alertList = [];
 
-        for (const alert of userAlerts) {
+        for (let i = 0; i < userAlerts.length; i++) {
+            const alert = userAlerts[i];
             try {
                 // Fetch token data using the getTokenData function
                 const tokenData = await getTokenData(alert.tokenAddress);
 
                 if (tokenData) {
-                    // Display alert with token name
-                    alertList.push(`🔔 Alert for ${tokenData.baseToken.name} (${tokenData.baseToken.symbol}): $${alert.alertValue.toFixed(2)}`);
+                    // Display alert with token name and a delete button
+                    alertList.push(`🔔 ${tokenData.baseToken.name} (${tokenData.baseToken.symbol}): $${alert.alertValue.toFixed(2)}`);
                 } else {
-                    alertList.push(`🔔 Alert for Unknown Token: $${alert.alertValue.toFixed(2)}`);
+                    alertList.push(`🔔 Unknown Token: $${alert.alertValue.toFixed(2)}`);
                 }
             } catch (error) {
                 console.error('Error fetching token data:', error);
-                alertList.push(`🔔 Alert for Unknown Token: $${alert.alertValue.toFixed(2)}`);
+                alertList.push(`🔔 Unknown Token: $${alert.alertValue.toFixed(2)}`);
             }
         }
 
-        ctx.reply(alertList.join('\n'));
+        // Display all alerts as individual messages
+        ctx.reply(`Your Alerts:\n${alertList.join('\n')}`, {
+            reply_markup: {
+                inline_keyboard: alertList.map((alert, index) => [Markup.button.callback(alert, `deleteAlert_${index}`)]),
+            },
+        });
     } else {
         ctx.reply('You have no active alerts.');
     }
     ctx.deleteMessage(); // Delete the initial message
+
+    // Inline button handler for deleting alerts
+    bot.action(/deleteAlert_\d+/, (ctx) => {
+        const index = parseInt(ctx.match[0].split('_')[1]);
+
+        if (!isNaN(index) && index >= 0 && index < userAlerts.length) {
+            // Delete the selected alert
+            userAlerts.splice(index, 1);
+            ctx.reply('Alert deleted successfully!');
+        } else {
+            ctx.reply('Invalid alert index.');
+        }
+
+        // After deleting, show the updated list of alerts
+        ctx.scene.reenter();
+    });
+
     ctx.scene.leave();
 });
 
