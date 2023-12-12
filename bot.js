@@ -2,6 +2,7 @@ const { Telegraf, Markup, Scenes, session } = require('telegraf');
 const axios = require('axios');
 const fs = require('fs');
 
+// const token = '6655838669:AAFippXL6lWc2XgAn6nq36vX7zXzZpMt5Bc';
 const token = '6638988189:AAFYFlTSYffAN1aWgtAI2Nag5i0bfXopSog';
 const bot = new Telegraf(token);
 
@@ -27,7 +28,7 @@ const predictionScene = new Scenes.BaseScene('predictionScene');
 const alertScene = new Scenes.BaseScene('alertScene');
 
 predictionScene.enter((ctx) => {
-    ctx.reply(`Ready to unveil the future of a crypto gem? Enter the token address below 👇 to kick off the prediction process. Ensure it's a valid Ethereum Network address, and for optimal results, consider tokens with over 3 days of market presence. 🕒\n\nHit cancel if you've had a change of heart. Let's dive into the crystal ball of crypto! 🔮`,
+    ctx.reply(`Ready to unveil the future of a crypto gem? Enter the token address below 👇 to kick off the prediction process. Ensure it's a valid Ethereum Network address, and for optimal results, consider tokens with over 3 days of market presence. 🕒\n\nHit cancel if you've had a change of heart. Let's dive into the crystal ball of crypto! 🤖`,
         Markup.inlineKeyboard([Markup.button.callback('Cancel', 'cancel')]))
         .then((message) => {
             // Store the initial message ID for later deletion
@@ -405,20 +406,19 @@ const checkAlerts = async (ctx) => {
 // Command handler
 bot.start((ctx) => {
     const welcomeMessage = `
-🤖 Welcome to the CIRCE AI Bot! 🤖
+🤖 Welcome to Circe AI Prediction Bot! 🤖
 
-Greetings! I'm Circe, your trusty AI assistant engineered to forecast token prices within the vast Ethereum Network 🪐
-    
-Using me is a walk in the park 🚶‍♂️
-    
-Tap the "🔮 Predict" button below 🔽
-Input the token address you're pondering 🤔
-To navigate to other functions, simply toggle next to the keyboard
-Lean back, unwind, and let my AI prowess unfold 🌠
-Remember, while I strive for top-notch results, it's crucial for you to DYOR as well. Now, let's delve into the future of the token! 🌟🛸
+Ready to unveil the future of your favorite crypto gems? Follow these simple steps to predict tokens:
+
+1. Type "/start" to begin.
+2. Choose "🤖 Predict" from the menu.
+3. Enter the token address you want to predict. Make sure it's a valid Ethereum Network address.
+4. Get insights based on market data, trends, and predictions!
+
+Hit "Cancel" anytime if you've had a change of heart. Let's dive into the crystal ball of crypto! 🚀🌐
 `;
 
-    ctx.reply(welcomeMessage, Markup.keyboard([['🔮 Predict'], ['🚀 Alert']]).resize());
+    ctx.reply(welcomeMessage, Markup.keyboard([['🤖 Predict'], ['🚀 Alert']]).resize());
 });
 
 // Register the scenes
@@ -496,7 +496,7 @@ bot.action('viewAlerts', async (ctx) => {
 
 
 // Button handler - entering the scene
-bot.hears('🔮 Predict', (ctx) => {
+bot.hears('🤖 Predict', (ctx) => {
     ctx.scene.enter('predictionScene');
 });
 
