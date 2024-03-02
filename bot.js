@@ -499,10 +499,10 @@ bot.action('cancel', (ctx) => {
 });
 
 // Start the bot
-// bot.launch({
-//     webhook: {
-//         domain: 'https://predictai.onrender.com',
-//         port: process.env.PORT || 3000,
-//     },
-// });
-bot.launch();
+bot.launch({
+    webhook: {
+        domain: 'https://predictai.onrender.com',
+        port: process.env.PORT || 3000,
+    },
+});
+// bot.launch();
