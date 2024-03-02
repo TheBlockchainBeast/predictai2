@@ -3,7 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 
 // const token = '6655838669:AAFippXL6lWc2XgAn6nq36vX7zXzZpMt5Bc';
-const token = '6638988189:AAFYFlTSYffAN1aWgtAI2Nag5i0bfXopSog';
+const token = '7193854212:AAFcrPwK00EaRMV4PJNnYs6-EMLwlJHCTX8';
 const bot = new Telegraf(token);
 
 // Store alerts in memory
@@ -28,7 +28,7 @@ const predictionScene = new Scenes.BaseScene('predictionScene');
 const alertScene = new Scenes.BaseScene('alertScene');
 
 predictionScene.enter((ctx) => {
-    ctx.reply(`Ready to unveil the future of a crypto gem? Enter the token address below 👇 to kick off the prediction process. Ensure it's a valid Ethereum Network address, and for optimal results, consider tokens with over 3 days of market presence. 🕒\n\nHit cancel if you've had a change of heart. Let's dive into the crystal ball of crypto! 🤖`,
+    ctx.reply(`Excited to embark on a journey into the cryptoverse's next big thing? Type in the token address down below 👇 to ignite the forecasting adventure. Make sure it's a legitimate Ethereum Network address, and for the best outcomes, focus on tokens that have been in the market for at least three days. 🕒`,
         Markup.inlineKeyboard([Markup.button.callback('Cancel', 'cancel')]))
         .then((message) => {
             // Store the initial message ID for later deletion
@@ -259,9 +259,9 @@ ${susCodeSection}
 });
 
 alertScene.enter((ctx) => {
-    ctx.reply(`Ready to set an alert? Enter the token address below 👇 to start the alert setup. Ensure it's a valid Ethereum Network address. 🕒
-\nTo set an alert, type the token address, add a comma, and then provide the market cap value for the alert. For example: \`tokenAddress, marketCapValue\`.
-\nHit cancel if you've had a change of heart. Let's get those alerts ready! 🔔`,
+    ctx.reply(`Are you prepared to stay informed? Input the token address below 👇 to initiate the alert configuration. Make sure it's a legitimate Ethereum Network address. 🕒
+\nTo create an alert, input the token address, followed by a comma, and specify the market cap value for the alert. For instance: tokenAddress, marketCapValue.
+\nIf you've reconsidered, feel free to hit cancel. Let's gear up those alerts! 🔔`,
         Markup.inlineKeyboard([[Markup.button.callback('View Alerts', 'viewAlerts')], [Markup.button.callback('Cancel', 'cancelAlert')]]))
         .then((message) => {
             // Store the initial message ID for later deletion
@@ -406,19 +406,10 @@ const checkAlerts = async (ctx) => {
 // Command handler
 bot.start((ctx) => {
     const welcomeMessage = `
-🤖 Welcome to Circe AI Prediction Bot! 🤖
-
-Ready to unveil the future of your favorite crypto gems? Follow these simple steps to predict tokens:
-
-1. Type "/start" to begin.
-2. Choose "🤖 Predict" from the menu.
-3. Enter the token address you want to predict. Make sure it's a valid Ethereum Network address.
-4. Get insights based on market data, trends, and predictions!
-
-Hit "Cancel" anytime if you've had a change of heart. Let's dive into the crystal ball of crypto! 🚀🌐
+Welcome to Predict AI Bot!
 `;
 
-    ctx.reply(welcomeMessage, Markup.keyboard([['🤖 Predict'], ['🚀 Alert']]).resize());
+    ctx.reply(welcomeMessage, Markup.keyboard([['Predict'], ['🚀 Alert']]).resize());
 });
 
 // Register the scenes
@@ -508,10 +499,10 @@ bot.action('cancel', (ctx) => {
 });
 
 // Start the bot
-bot.launch({
-    webhook: {
-        domain: 'https://dzfxgchvjbkl.onrender.com',
-        port: process.env.PORT || 3000,
-    },
-});
-// bot.launch();
+// bot.launch({
+//     webhook: {
+//         domain: 'https://predictai.onrender.com',
+//         port: process.env.PORT || 3000,
+//     },
+// });
+bot.launch();
