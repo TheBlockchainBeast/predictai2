@@ -234,7 +234,7 @@ ${susCodeSection}
                             { text: '🔄 Trade', url: 'https://uniswap.trade/token/' + userResponse },
                         ],
                         [
-                            { text: '⚡️ Advertise Here ⚡️', url: 'https://t.me/Circeai' },
+                            { text: '⚡️ Advertise Here ⚡️', url: 'https://t.me/predictai' },
                         ],
                     ];
 
