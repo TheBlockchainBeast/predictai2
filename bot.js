@@ -487,7 +487,7 @@ bot.action('viewAlerts', async (ctx) => {
 
 
 // Button handler - entering the scene
-bot.hears('🤖 Predict', (ctx) => {
+bot.hears('Predict', (ctx) => {
     ctx.scene.enter('predictionScene');
 });
 
