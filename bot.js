@@ -3,7 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 
 // const token = '6655838669:AAFippXL6lWc2XgAn6nq36vX7zXzZpMt5Bc';
-const token = '7193854212:AAFcrPwK00EaRMV4PJNnYs6-EMLwlJHCTX8';
+const token = '7112607792:AAGLgYyNDr-639Iqfxm-bNTcVsE19hFDO1g';
 const bot = new Telegraf(token);
 
 // Store alerts in memory
@@ -232,10 +232,7 @@ ${susCodeSection}
                         [
                             { text: '🤖 Unibot', url: 'https://t.me/unibotsniper_bot?start=OttoBots-' + userResponse },
                             { text: '🔄 Trade', url: 'https://uniswap.trade/token/' + userResponse },
-                        ],
-                        [
-                            { text: '⚡️ Advertise Here ⚡️', url: 'https://t.me/predictai' },
-                        ],
+                        ]
                     ];
 
                     const keyboardMarkup = { inline_keyboard: buttons };
