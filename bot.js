@@ -403,7 +403,7 @@ const checkAlerts = async (ctx) => {
 // Command handler
 bot.start((ctx) => {
     const welcomeMessage = `
-Welcome to Predict AI Bot!
+Welcome to Trackr AI Prediction Bot!
 `;
 
     ctx.reply(welcomeMessage, Markup.keyboard([['Predict'], ['🚀 Alert']]).resize());
