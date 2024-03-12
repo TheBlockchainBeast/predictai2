@@ -230,8 +230,7 @@ ${susCodeSection}
                             { text: '🎨 Maestro', url: 'https://t.me/MaestroSniperBot?start=' + userResponse },
                         ],
                         [
-                            { text: '🤖 Unibot', url: 'https://t.me/unibotsniper_bot?start=OttoBots-' + userResponse },
-                            { text: '🔄 Trade', url: 'https://uniswap.trade/token/' + userResponse },
+                            { text: '🤖 Unibot', url: 'https://t.me/unibotsniper_bot?start=OttoBots-' + userResponse }
                         ]
                     ];
 
