@@ -3,7 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 
 // const token = '6655838669:AAFippXL6lWc2XgAn6nq36vX7zXzZpMt5Bc';
-const token = '7112607792:AAGLgYyNDr-639Iqfxm-bNTcVsE19hFDO1g';
+const token = '7193854212:AAFcrPwK00EaRMV4PJNnYs6-EMLwlJHCTX8';
 const bot = new Telegraf(token);
 
 // Store alerts in memory
@@ -402,7 +402,7 @@ const checkAlerts = async (ctx) => {
 // Command handler
 bot.start((ctx) => {
     const welcomeMessage = `
-Welcome to Trackr AI Prediction Bot!
+Welcome to Predict AI Bot!
 `;
 
     ctx.reply(welcomeMessage, Markup.keyboard([['Predict'], ['🚀 Alert']]).resize());
@@ -497,7 +497,7 @@ bot.action('cancel', (ctx) => {
 // Start the bot
 bot.launch({
     webhook: {
-        domain: 'https://predictai.onrender.com',
+        domain: 'https://predictai2.onrender.com',
         port: process.env.PORT || 3000,
     },
 });
